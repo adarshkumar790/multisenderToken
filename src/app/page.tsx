@@ -306,7 +306,7 @@ export default function Home() {
                 query: {
                   validAddresses: JSON.stringify(valid),
                   invalidAddresses: JSON.stringify(invalid),
-                  selectedToken: selectedToken,  // Include the selected token details
+                  selectedToken: selectedToken,  
                 },
               }}
             >

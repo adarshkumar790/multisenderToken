@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import Web3 from "web3";
 import Image from "next/image";
 import MULTISENDER_ABI from './ABI.json';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface ValidAddress {
   address: string;
@@ -27,14 +29,9 @@ function ApproveContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // State for valid and invalid addresses
   const [validAddresses, setValidAddresses] = useState<ValidAddress[]>([]);
   const [invalidAddresses, setInvalidAddresses] = useState<InvalidAddress[]>([]);
-
-  // State for the token details
   const [selectedToken, setSelectedToken] = useState<string>("");
-
-  // Other state
   const [status, setStatus] = useState<"Prepare" | "Approve" | "Multisend">("Prepare");
   const [totalETH, setTotalETH] = useState<number>(0);
   const [accountETH, setAccountETH] = useState<number>(0);
@@ -47,36 +44,32 @@ function ApproveContent() {
   useEffect(() => {
     if (!searchParams) return;
 
-    // Get query params for addresses and selected token
     const validData = searchParams.get("validAddresses");
     const invalidData = searchParams.get("invalidAddresses");
     const tokenData = searchParams.get("selectedToken");
 
-    // Set the values from the query parameters
     if (validData) setValidAddresses(JSON.parse(validData));
     if (invalidData) setInvalidAddresses(JSON.parse(invalidData));
     if (tokenData) setSelectedToken(tokenData);
 
-    // Initialize Web3
     if (window.ethereum) {
       const web3Instance = new Web3(window.ethereum);
       setWeb3(web3Instance);
 
       const fetchAccountInfo = async () => {
         try {
-          // Request accounts from MetaMask
           const accounts = await window.ethereum.request({
             method: "eth_requestAccounts",
           });
           const account = accounts[0];
           setUserAddress(account);
 
-          // Fetch ETH balance for the connected account
           const balance = await web3Instance.eth.getBalance(account);
           const ethBalance = parseFloat(Web3.utils.fromWei(balance, "ether"));
           setAccountETH(ethBalance);
         } catch (error) {
           console.error("Error fetching account info:", error);
+          toast.error("Failed to fetch account information. Please try again.");
         }
       };
 
@@ -85,7 +78,6 @@ function ApproveContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    // Calculate total ETH required
     const total = validAddresses.reduce((acc, entry) => acc + parseFloat(entry.amount), 0);
     setTotalETH(total);
     setInsufficientETH(total > accountETH);
@@ -93,58 +85,49 @@ function ApproveContent() {
 
   const goBack = () => {
     router.push("/");
+    toast.info("Navigating back to the previous page.");
   };
 
   const handleMultisendToken = async () => {
     if (!web3) {
-      alert("Web3 instance is not initialized. Please connect to MetaMask.");
+      toast.error("Web3 instance is not initialized. Please connect to MetaMask.");
       return;
     }
 
-    
     const invalidAddressesList = validAddresses.filter(entry => !web3.utils.isAddress(entry.address));
     if (invalidAddressesList.length > 0) {
-      alert("Some addresses are invalid. Please check the addresses and try again.");
+      toast.error("Some addresses are invalid. Please check and try again.");
       return;
     }
 
     try {
       const contract = new web3.eth.Contract(MULTISENDER_ABI, MULTISENDER_CONTRACT_ADDRESS);
 
-      
       const addressesArray = validAddresses.map((entry) => entry.address);
       const amountsArray = validAddresses.map((entry) =>
         Web3.utils.toWei(entry.amount.toString(), "ether")
       );
 
-      // Log for debugging
-      console.log("Selected Token:", selectedToken);
-      console.log("Addresses:", addressesArray);
-      console.log("Amounts:", amountsArray);
-
-      // Estimate gas
       const gasEstimate = await contract.methods
         .multisendToken(selectedToken, addressesArray, amountsArray)
         .estimateGas({ from: userAddress });
-
-      // Log gas estimate
-      console.log("Gas Estimate:", gasEstimate);
 
       const tx = await contract.methods
         .multisendToken(selectedToken, addressesArray, amountsArray)
         .send({ from: userAddress, gas: gasEstimate });
 
+      toast.success("Tokens successfully sent to all recipients!");
       console.log("Transaction successful:", tx);
-      alert("Tokens successfully sent to all recipients!");
     } catch (error) {
       console.error("Error during multisend:", error);
-      alert("Error while processing the multisend. Please try again.");
+      toast.error("Error processing the multisend. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#1e293b] to-[#0F123D] bg-opacity-80 text-white">
       <div className="max-w-4xl mx-auto py-12 px-6">
+        <ToastContainer />
         <div className="flex flex-wrap justify-center items-center mb-8">
           <div className="flex items-center space-x-4">
             <Step stepNumber={1} label="Prepare" isActive={status === "Prepare"} />
@@ -176,7 +159,7 @@ function ApproveContent() {
             <h3 className="text-lg font-semibold mb-4">Valid Addresses</h3>
             <div className="space-y-2">
               {validAddresses.map((entry, index) => (
-                <RecipientRow key={index} address={entry.address} amount={`${entry.amount} ETH`} />
+                <RecipientRow key={index} address={entry.address} amount={`${entry.amount} Token`} />
               ))}
             </div>
 

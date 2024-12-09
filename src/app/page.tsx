@@ -28,6 +28,7 @@ export default function Home() {
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [selectTokendetails, setSelectTokendetails] = useState<string>("");
   const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
+  const [manualTokenInput, setManualTokenInput] = useState<string>("");
 
   useEffect(() => {
     const updateLineNumbers = () => {
@@ -158,6 +159,16 @@ export default function Home() {
 
     setDropdownVisible(false);
   };
+
+  const handleManualTokenInput = () => {
+    if (manualTokenInput && manualTokenInput.length === 42) {
+      setSelectedToken(manualTokenInput);
+      setDropdownVisible(false);
+      setManualTokenInput("");
+    } else {
+      alert("Please enter a valid token address.");
+    }
+  };
    
 
   const csvExample = [
@@ -233,12 +244,28 @@ export default function Home() {
                 >
                    <span className="text-xs text-gray-100">{token.name}</span>
                   <span className="font-bold">{token.symbol}</span> 
-                  <span className="font-bold">{token.token_address}</span>
+                  <span className="text-sm">{token.token_address.slice(0,36)}</span>
                    <span className="text-sm text-gray-100">
                     {parseFloat(token.balance) / Math.pow(10, token.decimals)}
                   </span> 
                 </div>
+                
               ))}
+              <div className="px-4 py-2 bg-gray-700">
+                    <input
+                      type="text"
+                      placeholder="Manually Enter Token Address"
+                      className="w-full bg-[#0F123D] text-white px-2 py-2 rounded border border-gray-500"
+                      value={manualTokenInput}
+                      onChange={(e) => setManualTokenInput(e.target.value)}
+                    />
+                    <button
+                      className="bg-gray-600 text-blue-300 font-bold mt-2 px-2 py-1 rounded"
+                      onClick={handleManualTokenInput}
+                    >
+                      Add Token
+                    </button>
+                  </div>
             </div>
             
             )}
@@ -306,7 +333,7 @@ export default function Home() {
                 query: {
                   validAddresses: JSON.stringify(valid),
                   invalidAddresses: JSON.stringify(invalid),
-                  selectedToken: selectedToken,  
+                  selectedToken: selectedToken, 
                 },
               }}
             >

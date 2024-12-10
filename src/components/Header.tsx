@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaCrown, FaEthereum } from "react-icons/fa";
+import { FaCrown} from "react-icons/fa";
 import Image from "next/image";
 import Web3 from "web3";
 import WalletConnectProvider from "@walletconnect/web3-provider";
-import { toast, ToastContainer } from "react-toastify";  // Correct import
-import "react-toastify/dist/ReactToastify.css";  // Make sure to import the CSS
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";  
 import ABI from "./ABI.json";
+import { FaEthereum } from "react-icons/fa";
+
 
 interface Network {
   name: string;
   chainId: string;
+  icon: string;
 }
 
 interface VipTier {
@@ -34,9 +37,9 @@ export default function Header() {
   const [web3, setWeb3] = useState<Web3 | null>(null);
 
   const networks: Network[] = [
-    { name: "Ethereum Mainnet", chainId: "0x1" },
-    { name: "BNB Smart Chain", chainId: "0x38" },
-    { name: "Polygon (MATIC)", chainId: "0x89" },
+    { name: "Ethereum Mainnet", chainId: "0x1", icon: <FaEthereum /> },
+    { name: "BNB Smart Chain", chainId: "0x38", icon: ""},
+    { name: "Polygon (MATIC)", chainId: "0x89", icon:""},
   ];
 
   const vipTiers: VipTier[] = [
@@ -58,42 +61,57 @@ export default function Header() {
         setEthBalance(Number(web3Instance.utils.fromWei(balance, "ether")));
         setWeb3(web3Instance);
         setShowWalletOptions(false);
-        toast.success("Connected to MetaMask successfully!");  // Success Toast
+        toast.success("Connected to MetaMask successfully!");
       } catch (error: any) {
         console.error("Error connecting to MetaMask:", error.message);
-        toast.error("Error connecting to MetaMask. Please try again.");  // Error Toast
+        toast.error("Error connecting to MetaMask. Please try again.");
       }
     } else {
-      toast.error("MetaMask is not installed. Please install it to connect.");  // Error Toast
+      toast.error("MetaMask is not installed. Please install it to connect.");
     }
   };
 
   const connectWalletConnect = async () => {
     try {
+      // Initialize WalletConnect provider
       const walletConnectProvider = new WalletConnectProvider({
         rpc: {
-          421613: "https://arbitrum-sepolia.infura.io/v3/a0b3a1898f1c4fc5b17650f6647cbcd2",
+          1: "https://mainnet.infura.io/v3/a0b3a1898f1c4fc5b17650f6647cbcd2",
         },
+        chainId: 1, // Ensure correct chainId for Arbitrum Sepolia
       });
-
+  
+      // Enable WalletConnect session (triggers QR code scan)
       await walletConnectProvider.enable();
+  
+      // Create a Web3 instance
       const web3Instance = new Web3(walletConnectProvider);
+  
+      // Get user accounts
       const accounts = await web3Instance.eth.getAccounts();
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found. Please ensure your wallet is unlocked.");
+      }
+  
+      // Fetch the balance of the first account
       const balance = await web3Instance.eth.getBalance(accounts[0]);
       const userAddress = accounts[0];
-
+  
+      // Update state with wallet details
       setWalletAddress(userAddress);
       setEthBalance(Number(web3Instance.utils.fromWei(balance, "ether")));
       setProvider(walletConnectProvider);
       setWeb3(web3Instance);
       setShowWalletOptions(false);
-      toast.success("Connected to WalletConnect successfully!");  
-    } catch (error: any) {
-      console.error("Error connecting to WalletConnect:", error.message);
-      toast.error("Error connecting to WalletConnect. Please try again.");  
+  
+      // Notify success
+      toast.success("Connected to WalletConnect successfully!");
+    } catch (error) {
+      console.error("Error connecting to WalletConnect:", error);
+      toast.error("Error connecting to WalletConnect. Please try again.");
     }
   };
-
+  
   const disconnectWallet = async () => {
     if (provider) {
       await provider.disconnect();
@@ -125,7 +143,7 @@ export default function Header() {
       if (error.code === 4902) {
         toast.error("Network not added to MetaMask. Please add it manually.");  
       } else {
-        toast.error("Error switching networks. Please try again.");  // Error T
+        toast.error("Error switching networks. Please try again."); 
       }
     }
   };
@@ -171,6 +189,7 @@ export default function Header() {
         <div className="text-2xl font-bold mb-2 sm:mb-0">
           Ledgerline Multisender
         </div>
+        
 
         <div className="flex flex-wrap justify-center items-center gap-3">
           <button
@@ -211,8 +230,6 @@ export default function Header() {
           )}
         </div>
       </div>
-
-      {/* Wallet Options Modal */}
       {showWalletOptions && (
         <div className="fixed inset-0 bg-[#0F123D] bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-gray-700 rounded-lg p-6 w-96 relative">
@@ -251,16 +268,17 @@ export default function Header() {
             </button>
             <h3 className="text-lg text-blue-500 font-bold mb-4">Select Network</h3>
             <div className="space-y-2">
-              {networks.map((network) => (
-                <button
-                  key={network.chainId}
-                  onClick={() => changeNetwork(network)}
-                  className="block w-full px-4 py-2 bg-gray-600 text-blue-300 rounded-lg mb-2 hover:text-gray-100 hover:bg-gray-400"
-                >
-                  {network.name}
-                </button>
-              ))}
-            </div>
+            {networks.map((network) => (
+            <button
+             key={network.chainId}
+             onClick={() => changeNetwork(network)}
+             className="flex items-center w-full px-4 py-2 bg-gray-600 text-blue-300 rounded-lg mb-2 hover:text-gray-100 hover:bg-gray-400"
+              >
+             <span className="mr-2 text-lg">{network.icon}</span> {/* Icon */}
+             <span>{network.name}</span> {/* Network Name */}
+             </button>
+            ))}
+           </div>
           </div>
         </div>
       )}
@@ -314,7 +332,7 @@ export default function Header() {
               ))}
             </div>
             <button
-              className="bg-blue-500 w-full mt-3 text-white py-2 rounded"
+              className="bg-gray-500 w-full mt-3 text-blue-900 font-bold py-2 rounded-xl"
               disabled={!walletAddress}
               onClick={buyVip}
             >

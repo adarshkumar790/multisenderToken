@@ -143,7 +143,7 @@ function ApproveContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 rounded-xl">
               <div className="text-center border border-blue-700 px-2 py-4 rounded-lg text-blue-500 text-xs">
                 <p className="text-xl font-semibold">{totalETH.toFixed(4)} ETH</p>
-                <p>Total ETH to send</p>
+                <p>Total Token to send</p>
               </div>
               <div className="text-center text-blue-400 border border-blue-700 rounded-xl px-2 py-4 text-xs">
                 <p className="text-xl font-semibold">{accountETH.toFixed(4)} ETH</p>
@@ -153,16 +153,18 @@ function ApproveContent() {
           </div>
 
           <div className="bg-gradient-to-r from-[#1e293b] to-[#0F123D] bg-opacity-80 p-6 rounded-lg text-xs text-blue-400">
-            <h3 className="text-lg font-semibold mb-4">Selected Token</h3>
+            <span className="text-lg font-semibold mb-4">Selected Token</span>
             <p className="text-sm text-gray-400">{selectedToken}</p>
 
-            <h3 className="text-lg font-semibold mb-4">Valid Addresses</h3>
+            <h3 className="text-lg font-semibold mb-2 mt-4">Valid Addresses</h3>
             <div className="space-y-2">
-              {validAddresses.map((entry, index) => (
-                <RecipientRow key={index} address={entry.address} amount={`${entry.amount} Token`} />
-              ))}
+            {validAddresses.map((entry, index) => (
+            <div key={index} className="flex justify-between items-center">
+            <span>{entry.address}</span>
+            <span>{`${entry.amount} Token`}</span>
             </div>
-
+            ))}
+            </div>
             <h3 className="text-lg font-semibold mt-6 mb-4">Invalid Addresses</h3>
             <div className="space-y-2 text-red-400">
               {invalidAddresses.length > 0 ? (

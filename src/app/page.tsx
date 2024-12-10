@@ -216,7 +216,7 @@ export default function Home() {
 
         <div className="w-full bg-gradient-to-r from-[#1e293b] to-[#0F123D] bg-opacity-80 border border-blue-700 rounded-lg p-4">
           <div className="w-full mb-6 ">
-            <label className="block text-xs font-bold mb-2">Token Address</label>
+            <label className="block text-xs font-bold mb-2 text-sky-400">Token Address</label>
             <div className="flex items-center gap-2">
                <div className="relative w-full">
             <div className="flex items-center">
@@ -274,14 +274,14 @@ export default function Home() {
       
               <div>
                 <input type="checkbox" id="deflationary" className="mr-2" />
-                <label htmlFor="deflationary">Deflationary</label>
+                <label htmlFor="deflationary" className="text-sky-400">Deflationary</label>
               </div>
             </div>
           </div>
 
           <div className="w-full mt-6 relative">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold mb-2">
+              <label className="block text-xs text-sky-400 font-bold mb-2">
                 List of Addresses in CSV
               </label>
               <button

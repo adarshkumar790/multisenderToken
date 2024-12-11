@@ -61,7 +61,7 @@ export default function Header() {
 
         toast.success("Connected to MetaMask successfully!");
 
-        // Add listeners for account and chain changes
+      
         window.ethereum.on("accountsChanged", handleAccountsChanged);
         window.ethereum.on("chainChanged", handleChainChanged);
       } catch (error: any) {
@@ -92,8 +92,6 @@ export default function Header() {
       setProvider(walletConnectProvider);
 
       toast.success("Connected to WalletConnect successfully!");
-
-      // Add listener for disconnect
       walletConnectProvider.on("disconnect", disconnectWallet);
     } catch (error) {
       console.error("Error connecting to WalletConnect:", error);
@@ -128,7 +126,6 @@ export default function Header() {
   };
 
   const handleChainChanged = () => {
-    // Reload the page to handle network changes
     window.location.reload();
   };
 

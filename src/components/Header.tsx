@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaCrown} from "react-icons/fa";
+import { FaCrown, FaEthereum } from "react-icons/fa";
 import Image from "next/image";
 import Web3 from "web3";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";  
+import "react-toastify/dist/ReactToastify.css";
 import ABI from "./ABI.json";
-import { FaEthereum } from "react-icons/fa";
-
 
 interface Network {
   name: string;
   chainId: string;
-  icon: string;
+  icon: JSX.Element;
 }
 
 interface VipTier {
@@ -38,8 +36,8 @@ export default function Header() {
 
   const networks: Network[] = [
     { name: "Ethereum Mainnet", chainId: "0x1", icon: <FaEthereum /> },
-    { name: "BNB Smart Chain", chainId: "0x38", icon: ""},
-    { name: "Polygon (MATIC)", chainId: "0x89", icon:""},
+    { name: "BNB Smart Chain", chainId: "0x38", icon: <></> },
+    { name: "Polygon (MATIC)", chainId: "0x89", icon: <></> },
   ];
 
   const vipTiers: VipTier[] = [
@@ -55,13 +53,17 @@ export default function Header() {
         await window.ethereum.request({ method: "eth_requestAccounts" });
         const accounts = await web3Instance.eth.getAccounts();
         const balance = await web3Instance.eth.getBalance(accounts[0]);
-        const userAddress = accounts[0];
 
-        setWalletAddress(userAddress);
+        setWalletAddress(accounts[0]);
         setEthBalance(Number(web3Instance.utils.fromWei(balance, "ether")));
         setWeb3(web3Instance);
-        setShowWalletOptions(false);
+        setProvider(window.ethereum);
+
         toast.success("Connected to MetaMask successfully!");
+
+        // Add listeners for account and chain changes
+        window.ethereum.on("accountsChanged", handleAccountsChanged);
+        window.ethereum.on("chainChanged", handleChainChanged);
       } catch (error: any) {
         console.error("Error connecting to MetaMask:", error.message);
         toast.error("Error connecting to MetaMask. Please try again.");
@@ -73,88 +75,93 @@ export default function Header() {
 
   const connectWalletConnect = async () => {
     try {
-      // Initialize WalletConnect provider
       const walletConnectProvider = new WalletConnectProvider({
         rpc: {
           1: "https://mainnet.infura.io/v3/a0b3a1898f1c4fc5b17650f6647cbcd2",
         },
-        chainId: 1, // Ensure correct chainId for Arbitrum Sepolia
       });
-  
-      // Enable WalletConnect session (triggers QR code scan)
+
       await walletConnectProvider.enable();
-  
-      // Create a Web3 instance
       const web3Instance = new Web3(walletConnectProvider);
-  
-      // Get user accounts
       const accounts = await web3Instance.eth.getAccounts();
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found. Please ensure your wallet is unlocked.");
-      }
-  
-      // Fetch the balance of the first account
       const balance = await web3Instance.eth.getBalance(accounts[0]);
-      const userAddress = accounts[0];
-  
-      // Update state with wallet details
-      setWalletAddress(userAddress);
+
+      setWalletAddress(accounts[0]);
       setEthBalance(Number(web3Instance.utils.fromWei(balance, "ether")));
-      setProvider(walletConnectProvider);
       setWeb3(web3Instance);
-      setShowWalletOptions(false);
-  
-      // Notify success
+      setProvider(walletConnectProvider);
+
       toast.success("Connected to WalletConnect successfully!");
+
+      // Add listener for disconnect
+      walletConnectProvider.on("disconnect", disconnectWallet);
     } catch (error) {
       console.error("Error connecting to WalletConnect:", error);
       toast.error("Error connecting to WalletConnect. Please try again.");
     }
   };
-  
+
   const disconnectWallet = async () => {
     if (provider) {
-      await provider.disconnect();
+      if (provider.disconnect) {
+        await provider.disconnect();
+      }
       setProvider(null);
     }
+
     setWalletAddress("");
     setEthBalance(0);
-    toast.success("Disconnected from wallet successfully.");  
+    toast.success("Disconnected from wallet successfully.");
   };
 
-  const isTierActive = (price: number) => ethBalance >= price;
+  const handleAccountsChanged = async (accounts: string[]) => {
+    if (accounts.length === 0) {
+      disconnectWallet();
+    } else {
+      const newAddress = accounts[0];
+      const newBalance = await web3!.eth.getBalance(newAddress);
+
+      setWalletAddress(newAddress);
+      setEthBalance(Number(web3!.utils.fromWei(newBalance, "ether")));
+      toast.info("Account switched successfully.");
+    }
+  };
+
+  const handleChainChanged = () => {
+    // Reload the page to handle network changes
+    window.location.reload();
+  };
 
   const changeNetwork = async (network: Network) => {
     try {
-      const { chainId } = network;
       if (window.ethereum) {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId }],
+          params: [{ chainId: network.chainId }],
         });
         setSelectedNetwork(network.name);
-        setShowNetworkOptions(false);
-        toast.success(`Switched to ${network.name} network.`);  
+        toast.success(`Switched to ${network.name} network.`);
       } else {
         toast.error("MetaMask is not installed. Please install it to change networks.");
       }
     } catch (error: any) {
-      console.error("Error switching networks:", error.message);
       if (error.code === 4902) {
-        toast.error("Network not added to MetaMask. Please add it manually.");  
+        toast.error("Network not added to MetaMask. Please add it manually.");
       } else {
-        toast.error("Error switching networks. Please try again."); 
+        toast.error("Error switching networks. Please try again.");
       }
     }
   };
 
+  const isTierActive = (price: number) => ethBalance >= price;
+
   const buyVip = async () => {
     if (selectedVipTier === null) {
-      toast.error("Please select a VIP tier.");  
+      toast.error("Please select a VIP tier.");
       return;
     }
     if (!web3 || !walletAddress) {
-      toast.error("Wallet not connected. Please connect your wallet."); 
+      toast.error("Wallet not connected. Please connect your wallet.");
       return;
     }
 
@@ -173,13 +180,22 @@ export default function Header() {
         value: priceInWei,
       });
 
-      toast.success(`Successfully purchased the ${selectedTier.name} VIP pack.`); 
+      toast.success(`Successfully purchased the ${selectedTier.name} VIP pack.`);
       setShowVipModal(false);
     } catch (error: any) {
       console.error("VIP purchase error:", error.message);
       toast.error("Transaction failed. Please try again.");
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (provider && provider.off) {
+        provider.off("accountsChanged", handleAccountsChanged);
+        provider.off("chainChanged", handleChainChanged);
+      }
+    };
+  }, [provider]);
 
 
   return (

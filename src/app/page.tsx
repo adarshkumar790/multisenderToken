@@ -29,6 +29,7 @@ export default function Home() {
   const [selectTokendetails, setSelectTokendetails] = useState<string>("");
   const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
   const [manualTokenInput, setManualTokenInput] = useState<string>("");
+  const [formError, setFormError] = useState<boolean>(false);
 
   useEffect(() => {
     const updateLineNumbers = () => {
@@ -180,6 +181,22 @@ export default function Home() {
   ];
 
   const { valid, invalid } = parseCsv();
+  const handleContinue = () => {
+    if (!selectedToken) {
+      alert("Please select or enter a valid token address.");
+      return;
+    }
+  
+    if (!csvText || csvError) {
+      alert("Please upload a valid CSV file.");
+      return;
+    }
+  
+    // Redirect to the next page
+    window.location.href = `/approve?validAddresses=${JSON.stringify(valid)}&invalidAddresses=${JSON.stringify(invalid)}&selectedToken=${selectedToken}`;
+  };
+  
+
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#1e293b] to-[#0F123D] bg-opacity-80 text-white flex flex-col items-center">
@@ -324,32 +341,42 @@ export default function Home() {
               </label>
             </div>
           </div>
-
+           
           <div className="mt-8">
-            {walletAddress ? (
-              <Link
-              href={{
-                pathname: "/approve",
-                query: {
-                  validAddresses: JSON.stringify(valid),
-                  invalidAddresses: JSON.stringify(invalid),
-                  selectedToken: selectedToken,
-                },
-              }}
-            >
-                <button className="bg-green-500 hover:bg-green-600 text-white w-full font-bold py-2 rounded-xl">
-                  Continue
-                </button>
-              </Link>
-            ) : (
-              <button
-                onClick={connectWallet}
-                className="bg-sky-500/50 hover:bg-blue-600 text-white w-full font-bold py-2 rounded-xl"
-              >
-                Connect Wallet
-              </button>
-            )}
-          </div>
+  {walletAddress ? (
+    selectedToken && csvText && !csvError ? (
+      <Link
+        href={{
+          pathname: "/approve",
+          query: {
+            validAddresses: JSON.stringify(valid),
+            invalidAddresses: JSON.stringify(invalid),
+            selectedToken: selectedToken,
+          },
+        }}
+      >
+        <button className="bg-green-500 hover:bg-green-600 text-white w-full font-bold py-2 rounded-xl">
+          Continue
+        </button>
+      </Link>
+    ) : (
+      <button
+        className="bg-gray-500 text-white w-full font-bold py-2 rounded-xl cursor-not-allowed"
+        onClick={() => alert("Please provide valid token and CSV input.")}
+        disabled
+      >
+        Continue
+      </button>
+    )
+  ) : (
+    <button
+      onClick={connectWallet}
+      className="bg-sky-500/50 hover:bg-blue-600 text-white w-full font-bold py-2 rounded-xl"
+    >
+      Connect Wallet
+    </button>
+  )}
+</div>
         </div>
       </main>
 

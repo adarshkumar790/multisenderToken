@@ -90,7 +90,7 @@ function ApproveContent() {
 
   const handleMultisendToken = async () => {
     if (!web3) {
-      toast.error("Web3 instance is not initialized. Please connect to MetaMask.");
+      toast.error("Please connect to MetaMask.");
       return;
     }
 
@@ -193,7 +193,7 @@ function ApproveContent() {
                 Back
               </button>
               <button
-                onClick={handleMultisendToken}
+                onClick={handleMultisendToken}   
                 disabled={validAddresses.length === 0 || insufficientETH}
                 className={`w-full ${
                   validAddresses.length > 0 && !insufficientETH

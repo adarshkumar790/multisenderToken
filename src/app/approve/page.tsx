@@ -88,7 +88,7 @@ function ApproveContent() {
     toast.info("Navigating back to the previous page.");
   };
 
-  const handleMultisendToken = async () => {
+const handleMultisendToken = async () => {
     if (!web3) {
       toast.error("Please connect to MetaMask.");
       return;

@@ -106,6 +106,9 @@ export default function Home() {
       case 56:
         chain = EvmChain.BSC;
         break;
+      case 97:
+        chain = EvmChain.BSC;
+        break;
       case 80001:
         chain = EvmChain.MUMBAI;
         break;

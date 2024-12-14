@@ -21,7 +21,7 @@ interface VipTier {
   price: number;
 }
 
-const CONTRACT_ADDRESS = "0x86889B10376dB115763050eba1Ed20b1d4Eb0fd3";
+const CONTRACT_ADDRESS = "0xd837944Dccfd69AcC54636509566e079834BD719";
 
 export default function Header() {
   const [walletAddress, setWalletAddress] = useState<string>("");

@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Web3 from "web3";
 import Image from "next/image";
 import MULTISENDER_ABI from './ABI.json';
+import ERC20_ABI from './ERC20_ABI.json'
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -39,7 +40,7 @@ function ApproveContent() {
   const [userAddress, setUserAddress] = useState<string>("");
   const [insufficientETH, setInsufficientETH] = useState<boolean>(false);
 
-  const MULTISENDER_CONTRACT_ADDRESS = "0x86889B10376dB115763050eba1Ed20b1d4Eb0fd3";
+  const MULTISENDER_CONTRACT_ADDRESS = "0xd837944Dccfd69AcC54636509566e079834BD719";
 
   useEffect(() => {
     if (!searchParams) return;
@@ -88,34 +89,44 @@ function ApproveContent() {
     toast.info("Navigating back to the previous page.");
   };
 
-const handleMultisendToken = async () => {
+  const handleMultisendToken = async () => {
     if (!web3) {
       toast.error("Please connect to MetaMask.");
       return;
     }
-
+  
     const invalidAddressesList = validAddresses.filter(entry => !web3.utils.isAddress(entry.address));
     if (invalidAddressesList.length > 0) {
       toast.error("Some addresses are invalid. Please check and try again.");
       return;
     }
-
+  
     try {
       const contract = new web3.eth.Contract(MULTISENDER_ABI, MULTISENDER_CONTRACT_ADDRESS);
-
-      const addressesArray = validAddresses.map((entry) => entry.address);
-      const amountsArray = validAddresses.map((entry) =>
-        Web3.utils.toWei(entry.amount.toString(), "ether")
-      );
-
+      const tokenContract = new web3.eth.Contract(ERC20_ABI, selectedToken);
+  
+      const addressesArray = validAddresses.map(entry => entry.address);
+      const amountsArray = validAddresses.map(entry => Web3.utils.toWei(entry.amount.toString(), "ether"));
+  
+      // Approve tokens if allowance is insufficient
+      const totalAmountToSend = amountsArray.reduce((acc, amt) => acc + BigInt(amt), BigInt(0));
+      const allowance = await tokenContract.methods.allowance(userAddress, MULTISENDER_CONTRACT_ADDRESS).call();
+  
+      if (BigInt(allowance) < totalAmountToSend) {
+        await tokenContract.methods.approve(MULTISENDER_CONTRACT_ADDRESS, totalAmountToSend.toString()).send({ from: userAddress });
+      }
+  
+      // Estimate gas and calculate fees
+      const fee = await contract.methods.calculateFee(addressesArray.length).call();
       const gasEstimate = await contract.methods
         .multisendToken(selectedToken, addressesArray, amountsArray)
-        .estimateGas({ from: userAddress });
-
+        .estimateGas({ from: userAddress, value: fee });
+  
+      // Execute the transaction
       const tx = await contract.methods
         .multisendToken(selectedToken, addressesArray, amountsArray)
-        .send({ from: userAddress, gas: gasEstimate });
-
+        .send({ from: userAddress, value: fee, gas: gasEstimate });
+  
       toast.success("Tokens successfully sent to all recipients!");
       console.log("Transaction successful:", tx);
     } catch (error) {
@@ -123,7 +134,7 @@ const handleMultisendToken = async () => {
       toast.error("Error processing the multisend. Please try again.");
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#1e293b] to-[#0F123D] bg-opacity-80 text-white">
       <div className="max-w-4xl mx-auto py-12 px-6">
